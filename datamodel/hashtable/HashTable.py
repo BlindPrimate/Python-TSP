@@ -7,10 +7,16 @@ class HashTable:
         # build indexing array  [None], [None], ... [None]
         self.array = [[] for i in range(n_buckets)]
 
-    def insert(self, item):
-        if isinstance(item, list):
-            item = str(item)
-        hashkey = hash(item)
+    def insert(self, item, *key):
+        # if key provided, convert to integer for use as hashed key
+        if key[0]:
+            key = int(key[0])
+            hashkey = hash(key)
+        else:  # else use the item itself as key
+            if isinstance(item, list):
+                item = str(item)
+            hashkey = hash(item)
+
         index = hashkey % self.n_buckets
         keyvalue = (hashkey, item)
         self.array[index].append(keyvalue)
