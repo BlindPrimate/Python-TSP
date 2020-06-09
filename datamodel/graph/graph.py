@@ -1,4 +1,9 @@
 
+class Vertex:
+    def __init__(self, data="", weights=[]):
+        self.data = data
+        self.weights = weights
+
 
 class WeightedGraph:
 
@@ -7,7 +12,8 @@ class WeightedGraph:
 
     def addVertex(self, data: str, weights: list):
         new_id = len(self.vertices) + 1
-        self.vertices[new_id] = (data, weights)
+        new_vertex = Vertex(data, weights)
+        self.vertices[new_id] = new_vertex
 
     def getGraph(self):
         return self.vertices
@@ -15,6 +21,6 @@ class WeightedGraph:
     def __str__(self):
         string = ""
         for i in self.vertices:
-            string +=  str(i) + ": " + str(self.vertices[i]) + "\n"
+            string += str(i) + ": " + str(self.vertices[i]) + "\n"
         return string
 
