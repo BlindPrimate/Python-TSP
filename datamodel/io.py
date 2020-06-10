@@ -10,9 +10,12 @@ class CSVImport:
 
     def import_packages(self):
         packages_url = os.path.join(_WORKING_PATH, "data/packages.csv")
+        data = []
         with open(packages_url, newline='') as f:
             reader = csv.reader(f)
-            data = list(reader)
+            for row in reader:
+                if any(row):
+                    data.append(row)
             return data
 
     def import_distances(self):

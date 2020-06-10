@@ -24,7 +24,7 @@ class HashTable:
 
     def find(self, key):
         if isinstance(key, list):
-            item = str(key)
+            key = str(key)
         hashkey = hash(key)
         index = hashkey % self.n_buckets
         for item in self.array[index]:
@@ -45,7 +45,10 @@ class HashTable:
                 return None
         return None
 
-    def __str__(self):
+    def to_list(self):
+        return [i for i in self]
+
+    def __repr__(self):
         string = ""
         for i in self.array:
             string += str(i) + "\n"
@@ -54,3 +57,20 @@ class HashTable:
     def __len__(self):
         return self.length
 
+    def __iter__(self):
+        self.count = 0
+        return self
+
+    # iterator for hash table
+    def __next__(self):
+        if self.count <= self.length:
+            # clear blank values from iterator
+            while True:
+                if self.array[self.count]:
+                    self.count += 1
+                    # iterate over hash table row and return only the data from each entry
+                    for entry in self.array[self.count - 1]:
+                        return entry[1]
+                self.count += 1
+        else:
+            raise StopIteration
