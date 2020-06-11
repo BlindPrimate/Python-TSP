@@ -21,8 +21,16 @@ class CSVImport:
     def import_distances(self):
         distances_url = os.path.join(_WORKING_PATH, "data/distances-raw.csv")
         with open(distances_url, newline='') as f:
-            reader = csv.reader(f)
+            reader = csv.reader(f, dialect="excel")
             data = list(reader)
             return data
 
-
+    def import_addresses(self):
+        packages_url = os.path.join(_WORKING_PATH, "data/addresses.csv")
+        data = []
+        with open(packages_url, newline='') as f:
+            reader = csv.reader(f)
+            for row in reader:
+                if any(row):
+                    data.append(row)
+            return data

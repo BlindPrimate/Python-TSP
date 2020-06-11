@@ -1,57 +1,25 @@
 from globals import *
-from sys import maxsize
+from datamodel import Route
+from datamodel import io
+
 
 class Scheduler:
 
     def __init__(self, package_data):
         self.raw_data = package_data
+        self.address_table = io.CSVImport().import_addresses()
 
-    def cycle_finder(self, distance_table:list, cycle_path:list):
+    def translate_address(self, package_address):
+        for index, address in enumerate(self.address_table[1]):
+            address = address.strip()
+            if address == package_address:
+                return index
 
-        # always start at hub
-        start_vert = 0
-        route = [start_vert]
-
-        while len(route) <= len(cycle_path):
-            best_edge = maxsize
-            best_vert = 0
-
-            for vert in cycle_path:
-                if vert in route or vert == start_vert:
-                    continue
-                print(distance_table[start_vert])
-                edge_weight = float(distance_table[start_vert][vert])
-                if edge_weight < best_edge:
-                    best_edge = edge_weight
-                    best_vert = vert
-                    start_vert = vert
-
-            route.append(best_vert)
-        return route
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    def route_builder(self):
+    def route_generator(self):
         for truck_load in self._truck_load_generator():
-            package_stops = [package.address for package in truck_load]
-            truck_route = []
-
-
-
+            stop_indexes = []
+            route_stops = [self.translate_address(package.address) for package in truck_load]
+            yield Route(route_stops)
 
     def _truck_load_generator(self):
         sorted_packages = self._sort_packages()
