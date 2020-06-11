@@ -1,5 +1,6 @@
 from datamodel.io import CSVImport
 from sys import maxsize
+import datetime
 
 class Route:
     def __init__(self, route_stops):
@@ -35,14 +36,41 @@ class Route:
             optimized_route.append(best_vert)
         return optimized_route
 
+    def total_route_distance(self) -> float:
+        total = 0
+        # cycle through stop locations stop -> stop 2(stop + 1) -> stop 3(stop + 1 + 1)  -> etc
+        for index, value in enumerate(self.route):
+            start = value
+            # break when end of list reached
+            if index == len(self.route) - 1:
+                # add trip back to hub
+                total += float(self.distance_table[start][0])
+                break
+            end = self.route[index + 1]
+            total += float(self.distance_table[start][end])
+
+        return total
+
+    def total_route_time(self):
+        total = 0
+        # cycle through stop locations stop -> stop 2(stop + 1) -> stop 3(stop + 1 + 1)  -> etc
+        for stop in range(len(self.route)):
+            if stop + 1 > len(self.route):
+                # add trip back to hub
+                total += float(self.distance_table[stop][0])
+                break
+            total += float(self.distance_table[stop][stop + 1])
+        return total
+
+
     def __len__(self):
         return len(self.route)
 
     def __repr__(self):
-        return str(self.route)
+        return "Route: " + str(self.route)
 
     def __str__(self):
-        return str(self.route)
+        return "Route: " + str(self.route)
 
     def __eq__(self, obj):
         if isinstance(obj, list):

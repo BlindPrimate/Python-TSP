@@ -7,6 +7,7 @@ class Truck:
     def __init__(self):
         self.packages = 0
         self.route = []
+        self.speed = 18
 
     def set_route(self, route):
         self.route = route

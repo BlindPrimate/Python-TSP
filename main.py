@@ -38,10 +38,12 @@ if __name__ == "__main__":
     trucks = []
     for route in scheduler.route_generator():
         truck = Truck()
-        truck.set_route(route)
+        truck.set_route(Route(route))
         trucks.append(truck)
-    print(trucks)
 
+    for truck in trucks:
+        print(truck.route.total_route_distance())
+    # simulate routes
 
 
 
