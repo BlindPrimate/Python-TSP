@@ -19,7 +19,7 @@ class CSVImport:
             return data
 
     def import_distances(self):
-        distances_url = os.path.join(_WORKING_PATH, "data/distances.csv")
+        distances_url = os.path.join(_WORKING_PATH, "data/distances-raw.csv")
         with open(distances_url, newline='') as f:
             reader = csv.reader(f)
             data = list(reader)
