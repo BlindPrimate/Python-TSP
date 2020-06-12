@@ -1,6 +1,7 @@
 from globals import *
 from datamodel import io
 from datamodel import Route
+from datamodel import RoutePoint
 
 
 class Scheduler:
@@ -18,15 +19,14 @@ class Scheduler:
     def route_generator(self) -> list:
         for truck_load in self._truck_load_generator(10):
             route_stops = []
-            packages = []
             for package in truck_load:
                 # change str of address into index of "Distances" table for easier manipulation
-                package_address = self.translate_address(package.address)
+                package_id = self.translate_address(package.address)
                 # give the package the Distances index as well for easy retrieval
-                package.address_index = package_address
-                route_stops.append(package_address)
-                packages.append(package)
-            yield Route(route_stops, packages)
+
+                route_stop = RoutePoint(package_id, package)
+                route_stops.append(route_stop)
+            yield Route(route_stops)
 
 
     def build_schedule(self, route):
@@ -46,7 +46,7 @@ class Scheduler:
     def _sort_packages(self):
         package_list = self.raw_data.to_list()
         # sort packages by deadline time
-        package_list.sort(key=lambda package: package.deadline)
+        package_list.sort(key=lambda package: (package.deadline, package.id))
         return package_list
 
 

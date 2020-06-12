@@ -39,7 +39,7 @@ if __name__ == "__main__":
     routes = [route for route in scheduler.route_generator()]
     depart = datetime.time(9, 0, 0)
     for route in routes:
-        scheduler.build_schedule(route)
+        print(route)
 
 
 

@@ -1,57 +1,62 @@
 from datamodel.io import CSVImport
 from sys import maxsize
 from globals import TRUCK_SPEED
+from datamodel.RoutePoint import RoutePoint
 
 import datetime
 
 class Route:
-    def __init__(self, route_stops, packages):
+    def __init__(self, route_stops):
         csv = CSVImport()
         self.distance_table = csv.import_distances()
         self.route = self._optimize_route(route_stops)
-        self.packages = packages
 
-
+    def get_address_indexes(self):
+        return [i.address_id for i in self.route]
 
     def _optimize_route(self, route_stops):
         # clear duplicates
         route = []
-        [route.append(i) for i in route_stops if i not in route]
+        used = []
+        for stop in route_stops:
+            if stop.address_id not in used:
+                route.append(stop)
+                used.append(stop.address_id)
 
         # always start at hub
-        start_vert = 0
-        optimized_route = [start_vert]
+        start_delivery_point = RoutePoint(0, None)
+        optimized_route = [start_delivery_point]
 
         # continue until all vertices have been added to the route
         while len(optimized_route) <= len(route):
             best_edge = maxsize
-            best_vert = 0
+            best_delivery_point = 0
 
-            # compare against other vertices
-            for vert in route:
-                # ignore verts that have already been added to routes
-                if vert in optimized_route or vert == start_vert:
+            # compare against other delivery points
+            for delivery_point in route:
+                # ignore delivery points that have already been added to optimized route
+                if delivery_point in optimized_route or delivery_point == start_delivery_point:
                     continue
-                edge_weight = float(self.distance_table[start_vert][vert])
+                edge_weight = float(self.distance_table[start_delivery_point.address_id][delivery_point.address_id])
                 if edge_weight < best_edge:
                     best_edge = edge_weight
-                    best_vert = vert
-                    start_vert = vert
+                    best_delivery_point = delivery_point
+                    start_delivery_point = delivery_point
 
-            optimized_route.append(best_vert)
+            optimized_route.append(best_delivery_point)
         return optimized_route
 
     def total_route_distance(self) -> float:
         total = 0
         # cycle through stop locations stop -> stop 2(stop + 1) -> stop 3(stop + 1 + 1)  -> etc
         for index, value in enumerate(self.route):
-            start = value
+            start = value.address_id
             # break when end of list reached
             if index == len(self.route) - 1:
                 # add trip back to hub
                 total += float(self.distance_table[start][0])
                 break
-            end = self.route[index + 1]
+            end = self.route[index + 1].address_id
             total += float(self.distance_table[start][end])
 
         return total
