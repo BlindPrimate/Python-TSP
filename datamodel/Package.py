@@ -9,6 +9,7 @@ class Package:
         self.city = city
         self.state = state
         self.zip = zip
+        self.address_index = None
         if deadline == "EOD":
             self.deadline = datetime.datetime.strptime("5:30 pm", "%I:%M %p")
         else:

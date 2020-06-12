@@ -1,12 +1,17 @@
 from datamodel.io import CSVImport
 from sys import maxsize
+from globals import TRUCK_SPEED
+
 import datetime
 
 class Route:
-    def __init__(self, route_stops):
+    def __init__(self, route_stops, packages):
         csv = CSVImport()
         self.distance_table = csv.import_distances()
         self.route = self._optimize_route(route_stops)
+        self.packages = packages
+
+
 
     def _optimize_route(self, route_stops):
         # clear duplicates
@@ -51,16 +56,9 @@ class Route:
 
         return total
 
-    def total_route_time(self):
-        total = 0
-        # cycle through stop locations stop -> stop 2(stop + 1) -> stop 3(stop + 1 + 1)  -> etc
-        for stop in range(len(self.route)):
-            if stop + 1 > len(self.route):
-                # add trip back to hub
-                total += float(self.distance_table[stop][0])
-                break
-            total += float(self.distance_table[stop][stop + 1])
-        return total
+    def total_route_time(self) -> float:
+        distance = self.total_route_distance()
+        return distance / TRUCK_SPEED
 
 
     def __len__(self):

@@ -1,9 +1,9 @@
+import datetime
+
 import datamodel.io as io
 from datamodel.hashtable import HashTable
 from datamodel import Package
 from scheduling import Scheduler
-from datamodel import Route
-from datamodel import Truck
 
 from globals import *
 
@@ -35,15 +35,13 @@ if __name__ == "__main__":
 
     # print(graph_distances)
     scheduler = Scheduler(hash_packages)
-    trucks = []
-    for route in scheduler.route_generator():
-        truck = Truck()
-        truck.set_route(Route(route))
-        trucks.append(truck)
 
-    for truck in trucks:
-        print(truck.route.total_route_distance())
-    # simulate routes
+    routes = [route for route in scheduler.route_generator()]
+    depart = datetime.time(9, 0, 0)
+    for route in routes:
+        scheduler.build_schedule(route)
+
+
 
 
 

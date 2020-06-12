@@ -31,5 +31,6 @@ class MyTestCase(unittest.TestCase):
         self.assertAlmostEqual(30.2, distance_1)
         self.assertAlmostEqual(40.2, distance_2)
 
+
 if __name__ == '__main__':
     unittest.main()
