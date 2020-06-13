@@ -24,13 +24,9 @@ class Scheduler:
                 package_id = self.translate_address(package.address)
                 # give the package the Distances index as well for easy retrieval
 
-                route_stop = RoutePoint(package_id, package)
+                route_stop = RoutePoint(package_id, [package])
                 route_stops.append(route_stop)
             yield Route(route_stops)
-
-
-    def build_schedule(self, route):
-        print(route)
 
     def _truck_load_generator(self, truck_capacity=TRUCK_CAPACITY) -> list:
         sorted_packages = self._sort_packages()
@@ -46,8 +42,14 @@ class Scheduler:
     def _sort_packages(self):
         package_list = self.raw_data.to_list()
         # sort packages by deadline time
-        package_list.sort(key=lambda package: (package.deadline, package.id))
+        package_list.sort(key=lambda package: (package.deadline, package.address))
         return package_list
 
+    def build_route_schedule(self, route, departure_time):
+        schedule = []
+        for stop in route.route_stops:
+            if stop.packages:
+                for package in stop.packages:
+                    pass
 
 

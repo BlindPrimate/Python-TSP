@@ -8,7 +8,7 @@ class MyTestCase(unittest.TestCase):
     def build_route(self, stops):
         route = []
         for i in stops:
-            stop = RoutePoint(i, Package(1, "2000 main", "Podunk", "Wisconsin", 55555, "EOD", 17, "DELIVERED"))
+            stop = RoutePoint(i, [Package(1, "2000 main", "Podunk", "Wisconsin", 55555, "EOD", 17, "DELIVERED")])
             route.append(stop)
         return Route(route)
 
@@ -30,6 +30,11 @@ class MyTestCase(unittest.TestCase):
         distance_2 = test_route_2.total_route_distance()
         self.assertAlmostEqual(30.2, distance_1)
         self.assertAlmostEqual(40.2, distance_2)
+
+    def test_total_route_time(self):
+        test_route_1 = self.build_route([3, 11, 5, 20, 6, 22])
+        time_1 = test_route_1.total_route_time()
+        self.assertAlmostEqual(2.23, time_1, 2)
 
     if __name__ == '__main__':
         unittest.main()

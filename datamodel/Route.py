@@ -9,19 +9,35 @@ class Route:
     def __init__(self, route_stops):
         csv = CSVImport()
         self.distance_table = csv.import_distances()
-        self.route = self._optimize_route(route_stops)
+        self.route_stops = self._optimize_route(route_stops)
 
     def get_address_indexes(self):
-        return [i.address_id for i in self.route]
+        return [i.address_id for i in self.route_stops]
+
+    def _consolidate_stops(self, route_stops):
+        """
+        Consolidates any packages going to stops that appear twice in a route.
+        :param route_stops:
+        :return: list
+        """
+        consolidated = []
+        used = []
+        for stop in route_stops:
+            # if stop has only one package send to consolidated list
+            if stop.address_id not in used:
+                consolidated.append(stop)
+                used.append(stop.address_id)
+            # else look for package with identical address and add package to it
+            else:
+                for consolidated_stop in consolidated:
+                    if consolidated_stop.address_id == stop.address_id:
+                        consolidated_stop.packages.extend(stop.packages)
+        return consolidated
 
     def _optimize_route(self, route_stops):
         # clear duplicates
-        route = []
-        used = []
-        for stop in route_stops:
-            if stop.address_id not in used:
-                route.append(stop)
-                used.append(stop.address_id)
+        route = self._consolidate_stops(route_stops)
+        print(route)
 
         # always start at hub
         start_delivery_point = RoutePoint(0, None)
@@ -49,14 +65,14 @@ class Route:
     def total_route_distance(self) -> float:
         total = 0
         # cycle through stop locations stop -> stop 2(stop + 1) -> stop 3(stop + 1 + 1)  -> etc
-        for index, value in enumerate(self.route):
+        for index, value in enumerate(self.route_stops):
             start = value.address_id
             # break when end of list reached
-            if index == len(self.route) - 1:
+            if index == len(self.route_stops) - 1:
                 # add trip back to hub
                 total += float(self.distance_table[start][0])
                 break
-            end = self.route[index + 1].address_id
+            end = self.route_stops[index + 1].address_id
             total += float(self.distance_table[start][end])
 
         return total
@@ -66,18 +82,20 @@ class Route:
         return distance / TRUCK_SPEED
 
 
+
+
     def __len__(self):
-        return len(self.route)
+        return len(self.route_stops)
 
     def __repr__(self):
-        return "Route: " + str(self.route)
+        return "Route: " + str(self.route_stops)
 
     def __str__(self):
-        return "Route: " + str(self.route)
+        return "Route: " + str(self.route_stops)
 
     def __eq__(self, obj):
         if isinstance(obj, list):
-            for i in range(len(self.route)):
-                if self.route[i] != obj[i]:
+            for i in range(len(self.route_stops)):
+                if self.route_stops[i] != obj[i]:
                     return False
             return True

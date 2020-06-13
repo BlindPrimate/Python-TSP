@@ -1,7 +1,7 @@
 
 
 class RoutePoint:
-    def __init__(self, address_id, packages):
+    def __init__(self, address_id: int, packages: list):
         self.address_id = address_id
         self.packages = packages
 
