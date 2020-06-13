@@ -1,9 +1,19 @@
 from datamodel.io import CSVImport
 from sys import maxsize
 from globals import TRUCK_SPEED
-from datamodel.RoutePoint import RoutePoint
 
 import datetime
+
+class RoutePoint:
+    def __init__(self, address_id: int, packages: list):
+        self.address_id = address_id
+        self.packages = packages
+
+    def __repr__(self):
+        return "RoutePoint: ({}, {})".format(self.address_id, self.packages)
+
+    def __str__(self):
+        return "RoutePoint: ({}, {})".format(self.address_id, self.packages)
 
 class Route:
     def __init__(self, route_stops):
@@ -92,6 +102,12 @@ class Route:
 
     def __str__(self):
         return "Route: " + str(self.route_stops)
+
+    def __iter__(self):
+        node = self.head
+        while node is not None:
+            yield node
+            node = node.next
 
     def __eq__(self, obj):
         if isinstance(obj, list):

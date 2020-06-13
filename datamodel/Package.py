@@ -1,5 +1,5 @@
-
 import datetime
+
 
 class Package:
 
@@ -18,4 +18,14 @@ class Package:
         self.status = status
         self.special = special
 
-
+    def package_details(self):
+        return "{}   {}. {}, {}., {}  {}  {}  {}".format(self.id,
+                                                        self.address,
+                                                        self.city,
+                                                        self.state,
+                                                        self.zip,
+                                                        self.deadline.time(),
+                                                        self.mass,
+                                                        self.status,
+                                                        self.special
+                                                        )
