@@ -55,8 +55,10 @@ class Scheduler:
         # print(route[0])
 
         # always start at hub
-        start_delivery_point = route[0]
-        optimized_route = [start_delivery_point]
+        start_delivery_point = RoutePoint(0, None)
+        optimized_route = Route()
+        optimized_route.add_stop(RoutePoint(0, None))
+        origin_point = start_delivery_point
 
         # continue until all vertices have been added to the route
         while len(optimized_route) <= len(route):
@@ -68,14 +70,21 @@ class Scheduler:
                 # ignore delivery points that have already been added to optimized route
                 if delivery_point in optimized_route or delivery_point == start_delivery_point:
                     continue
-                edge_weight = float(self.distance_table[start_delivery_point.address_id][delivery_point.address_id])
+                edge_weight = float(self.distance_table[origin_point.address_id][delivery_point.address_id])
                 if edge_weight < best_edge:
                     best_edge = edge_weight
                     best_delivery_point = delivery_point
                     start_delivery_point = delivery_point
+            best_delivery_point.set_distance_to(best_edge)
+            optimized_route.add_stop(best_delivery_point)
+            origin_point = best_delivery_point
 
-            optimized_route.append(best_delivery_point)
-        return Route(optimized_route)
+        # add a return to hub stop to route
+        final_leg = RoutePoint(0, None)
+        distance = float(self.distance_table[optimized_route[-1].address_id][0])
+        final_leg.set_distance_to(distance)
+        optimized_route.add_stop(final_leg)
+        return optimized_route
 
     def translate_address(self, package_address) -> int:
         for index, address in enumerate(self.address_table[1]):
@@ -100,7 +109,6 @@ class Scheduler:
         count = 0
         # cut sorted_packages into spans of TRUCK_CAPACITY size
         while count <= len(sorted_packages):
-            print(count + truck_capacity, len(sorted_packages))
             if count + truck_capacity == len(sorted_packages):
                 break
             if count + truck_capacity > len(sorted_packages):
