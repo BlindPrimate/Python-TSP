@@ -3,6 +3,7 @@ from datamodel import io
 from datamodel import Route
 from datamodel import RoutePoint
 from datamodel import Package
+from datamodel import Truck
 from datamodel.hashtable import HashTable
 from sys import maxsize
 
@@ -10,12 +11,19 @@ from sys import maxsize
 def build_package_table(package_data):
     hash_table = HashTable(45)
 
-    for package in package_data:
-        if package[0]:
+    for row in package_data:
+        if row[0]:
             # unpack csv provided list to variables
-            id, address, city, state, zip, deadline, mass, special = package[:8]
+            id, address, city, state, zip, deadline, mass, special_instuction = row[:8]
+
             # build package object
-            package = Package(id, address, city, state, zip, deadline, AT_HUB, mass)
+
+            # handle special package instructions  -- naive
+            if special_instuction:
+                package = Package(id, address, city, state, zip, deadline, AT_HUB, mass)
+                package.set_special_status(special_instuction)
+            else:
+                package = Package(id, address, city, state, zip, deadline, AT_HUB, mass)
             # insert into hash table with provided id for easier retrieval
             hash_table.insert(package, id)
     return hash_table
@@ -27,9 +35,19 @@ class Scheduler:
         self.raw_data = build_package_table(data.import_packages())
         self.address_table = data.import_addresses()
         self.distance_table = data.import_distances()
+        self.regular_routes = []
+        self.special_routes = []
+        self.regular_packages = []
+        self.special_packages = {
+            "truck": [],
+            "delayed": [],
+            "deliver_with": [],
+            "wrong_address": [],
+        }
+        self.truck_1 = Truck()
+        self.truck_2 = Truck()
 
-
-    def _consolidate_stops(self, route_stops:Route):
+    def _consolidate_stops(self, route_stops: Route):
         """
         Consolidates any packages going to stops that appear twice in a route.
         :param route_stops:
@@ -49,10 +67,16 @@ class Scheduler:
                         consolidated_stop.packages.extend(stop.packages)
         return Route(consolidated)
 
+    def _stop_generator(self, packages):
+        for package in packages:
+            address_id = self._translate_address(package.address)
+            stop = RoutePoint(address_id, packages)
+            stop.address_id = address_id
+            yield stop
+
     def _optimize_route(self, route_stops):
         # clear duplicates
         route = self._consolidate_stops(route_stops)
-        # print(route[0])
 
         # always start at hub
         start_delivery_point = RoutePoint(0, None)
@@ -86,49 +110,55 @@ class Scheduler:
         optimized_route.add_stop(final_leg)
         return optimized_route
 
-    def translate_address(self, package_address) -> int:
+    def _translate_address(self, target_address):
         for index, address in enumerate(self.address_table[1]):
             address = address.strip()
-            if address == package_address:
-                return index
+            if address == target_address:
+                return address
+        return None
 
-    def route_generator(self) -> list:
-        for truck_load in self._truck_load_generator(10):
-            route = Route()
-            for package in truck_load:
-                # change str of address into index of "Distances" table for easier manipulation
-                package_id = self.translate_address(package.address)
-                # give the package the Distances index as well for easy retrieval
-
-                route_stop = RoutePoint(package_id, [package])
-                route.add_stop(route_stop)
-            yield self._optimize_route(route)
-
-    def _truck_load_generator(self, truck_capacity=TRUCK_CAPACITY) -> list:
-        sorted_packages = self._sort_packages()
+    def _truck_load_generator(self, package_list, truck_capacity=TRUCK_CAPACITY):
         count = 0
         # cut sorted_packages into spans of TRUCK_CAPACITY size
-        while count <= len(sorted_packages):
-            if count + truck_capacity == len(sorted_packages):
+        while count <= len(package_list):
+            if count + truck_capacity == len(package_list):
                 break
-            if count + truck_capacity > len(sorted_packages):
-                yield sorted_packages[count:]
+            if count + truck_capacity > len(package_list):
+                yield package_list[count:]
             else:
-                yield sorted_packages[count:count + truck_capacity]
+                yield package_list[count:count + truck_capacity]
             count += truck_capacity
+
+    def route_builder(self):
+        self._sort_packages()
+        route = Route()
+
+        # regular routes
+        for load in self._truck_load_generator(self.regular_packages):
+            for package in load:
+                address_index = self._translate_address(package.address)
+                package.address_index = address_index
+            for stop in self._stop_generator(load):
+                route.add_stop(stop)
+            self.regular_routes.append(route)
+
 
     def _sort_packages(self):
         package_list = self.raw_data.to_list()
+        for package in package_list:
+            if package.has_special_status():
+                special = package.get_special_status()
+                self.special_packages[special].append(package)
+                self.special_packages[special].sort(key=lambda x: (x.deadline, x.address))
+            else:
+                self.regular_packages.append(package)
+
         # sort packages by deadline time
-        package_list.sort(key=lambda package: (package.deadline, package.address))
-        return package_list
+        self.regular_packages.sort(key=lambda x: (x.deadline, x.address))
 
     def build_route_schedule(self, route, departure_time):
         schedule = []
         for stop in route:
             pass
-            # if stop.packages:
-                # for package in stop.packages:
-                #     pass
 
 

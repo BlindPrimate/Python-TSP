@@ -26,12 +26,13 @@ class RoutePoint:
     def __str__(self):
         return "RoutePoint: ({}, {})".format(self.address_id, self.packages)
 
+
 class Route:
     def __init__(self, route=None):
         if route is None:
             route = []
-        self.route_stops = route
         csv = CSVImport()
+        self.route_stops = route
         self.distance_table = csv.import_distances()
 
     def add_stop(self, stop):
