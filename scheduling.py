@@ -69,9 +69,7 @@ class Scheduler:
 
     def _stop_generator(self, packages):
         for package in packages:
-            address_id = self._translate_address(package.address)
-            stop = RoutePoint(address_id, packages)
-            stop.address_id = address_id
+            stop = RoutePoint(package.address_index, package)
             yield stop
 
     def _optimize_route(self, route_stops):
@@ -114,7 +112,7 @@ class Scheduler:
         for index, address in enumerate(self.address_table[1]):
             address = address.strip()
             if address == target_address:
-                return address
+                return index
         return None
 
     def _truck_load_generator(self, package_list, truck_capacity=TRUCK_CAPACITY):
@@ -129,18 +127,29 @@ class Scheduler:
                 yield package_list[count:count + truck_capacity]
             count += truck_capacity
 
-    def route_builder(self):
+    def regular_route_builder(self):
         self._sort_packages()
-        route = Route()
-
         # regular routes
         for load in self._truck_load_generator(self.regular_packages):
+            route = Route()
             for package in load:
                 address_index = self._translate_address(package.address)
                 package.address_index = address_index
             for stop in self._stop_generator(load):
                 route.add_stop(stop)
             self.regular_routes.append(route)
+
+    def special_route_builder(self):
+        self._sort_packages()
+        # special routes
+        for special_type in self.special_packages.values():
+            route = Route()
+            for package in special_type:
+                address_index = self._translate_address(package.address)
+                package.address_index = address_index
+            for stop in self._stop_generator(special_type):
+                route.add_stop(stop)
+            self.special_routes.append(route)
 
 
     def _sort_packages(self):
