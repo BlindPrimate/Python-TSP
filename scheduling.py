@@ -5,6 +5,7 @@ from datamodel import RoutePoint
 from datamodel import Package
 from datamodel import Truck
 from datamodel.hashtable import HashTable
+import datetime
 from sys import maxsize
 
 
@@ -69,7 +70,7 @@ class Scheduler:
 
     def _stop_generator(self, packages):
         for package in packages:
-            stop = RoutePoint(package.address_index, package)
+            stop = RoutePoint(package.address_index, [package])
             yield stop
 
     def _optimize_route(self, route_stops):
@@ -137,6 +138,7 @@ class Scheduler:
                 package.address_index = address_index
             for stop in self._stop_generator(load):
                 route.add_stop(stop)
+            route = self._optimize_route(route)
             self.regular_routes.append(route)
 
     def special_route_builder(self):
@@ -149,6 +151,7 @@ class Scheduler:
                 package.address_index = address_index
             for stop in self._stop_generator(special_type):
                 route.add_stop(stop)
+            route = self._optimize_route(route)
             self.special_routes.append(route)
 
 
@@ -165,9 +168,15 @@ class Scheduler:
         # sort packages by deadline time
         self.regular_packages.sort(key=lambda x: (x.deadline, x.address))
 
-    def build_route_schedule(self, route, departure_time):
+    def build_route_schedule(self, route, departure_time=datetime.datetime(2000, 1, 1, hour=9, minute=30, second=0)):
         schedule = []
+        current_time = departure_time
         for stop in route:
-            pass
-
+            stop_str = ""
+            current_time = current_time + datetime.timedelta(hours=stop.travel_time)
+            if stop.packages:
+                for package in stop.packages:
+                    stop_str += "{} {} {} {} Delivery Time: {}\n".format(package.id, package.address, package.city, package.zip, current_time)
+                schedule.append(stop_str)
+        return schedule
 

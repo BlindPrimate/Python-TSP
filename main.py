@@ -1,15 +1,7 @@
 import datetime
-
-import datamodel.io as io
-from datamodel.hashtable import HashTable
-from datamodel import Package
 from scheduling import Scheduler
 
 from globals import *
-
-
-
-
 
 
 if __name__ == "__main__":
@@ -19,11 +11,13 @@ if __name__ == "__main__":
 
     scheduler.regular_route_builder()
     scheduler.special_route_builder()
-    # print("regular")
+
     for route in scheduler.regular_routes:
-        pass
-    for i in scheduler.special_routes:
-        pass
+        sched_1 = scheduler.build_route_schedule(route)
+        for i in sched_1:
+            print(i)
+    # print("regular")
+
 
     depart = datetime.time(9, 0, 0)
 

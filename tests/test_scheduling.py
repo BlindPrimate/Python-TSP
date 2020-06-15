@@ -34,11 +34,12 @@ class MyTestCase(unittest.TestCase):
         distance_2 = test_route_2.total_route_distance()
         self.assertAlmostEqual(24.4, distance_1)
         self.assertAlmostEqual(34.9, distance_2)
-    #
-    # def test_total_route_time(self):
-    #     test_route_1 = self.build_route([3, 11, 5, 20, 6, 22])
-    #     time_1 = test_route_1.total_route_time()
-    #     self.assertAlmostEqual(2.23, time_1, 2)
+
+    def test_total_route_time(self):
+        test_route_1 = self.build_route([3, 11, 5, 20, 6, 22])
+        print(test_route_1.get_address_indexes())
+        time_1 = test_route_1.total_route_time()
+        self.assertAlmostEqual(1.94, time_1, 2)
 
 if __name__ == '__main__':
     unittest.main()
