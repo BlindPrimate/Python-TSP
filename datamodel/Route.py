@@ -2,7 +2,9 @@ from datamodel.io import CSVImport
 from globals import TRUCK_SPEED
 
 class RoutePoint:
-    def __init__(self, address_id: int, packages: list):
+    def __init__(self, address_id: int, packages=None):
+        if packages is None:
+            packages = []
         self.address_id = address_id
         self.packages = packages
         self.distance_to = 0
@@ -34,6 +36,7 @@ class Route:
         csv = CSVImport()
         self.route_stops = route
         self.distance_table = csv.import_distances()
+        self.truck_id = 0
 
     def add_stop(self, stop):
         self.route_stops.append(stop)

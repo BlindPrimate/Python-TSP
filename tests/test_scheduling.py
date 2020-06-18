@@ -8,7 +8,7 @@ from scheduling import Scheduler
 class MyTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.scheduler = Scheduler()
+        self.scheduler = Scheduler(2)
 
     def build_route(self, stops):
         route = Route()

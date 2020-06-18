@@ -31,22 +31,59 @@ def build_package_table(package_data):
 
 
 class Scheduler:
-    def __init__(self):
+    def __init__(self, num_of_trucks):
         data = io.CSVImport()
-        self.raw_data = build_package_table(data.import_packages())
+        self.package_hash = build_package_table(data.import_packages())
         self.address_table = data.import_addresses()
         self.distance_table = data.import_distances()
         self.regular_routes = []
         self.special_routes = []
         self.regular_packages = []
+        self.trucks = []
+        for id in range(1, num_of_trucks):
+            self.trucks.append(Truck(id))
         self.special_packages = {
             "truck": [],
             "delayed": [],
             "deliver_with": [],
             "wrong_address": [],
         }
-        self.truck_1 = Truck()
-        self.truck_2 = Truck()
+        self.current_time = START_OF_DAY
+
+        # function calls to build routes
+        self.regular_route_builder()
+        self.special_route_builder()
+
+    def simulate_day(self):
+        while self.current_time < END_OF_DAY:
+            truck = self._get_truck()
+            if len(self.regular_routes) > 0 and truck:
+                while len(self.regular_routes) > 0:
+                    route = self.regular_routes.pop(0)
+                    truck.set_route(route)
+                    self.run_route(truck)
+            advance_minute = datetime.timedelta(minutes=1)
+            self.current_time += advance_minute
+
+    def run_route(self, truck):
+        truck.truck_departing_hub()
+        current_time = self.current_time
+        for stop in truck.route:
+            current_time += datetime.timedelta(hours=stop.travel_time)
+            for package in stop.packages:
+                package.delivered = current_time
+                package.status = DELIVERED
+                print(current_time)
+        truck.truck_returning_hub()
+
+
+
+    def _get_truck(self):
+        for truck in self.trucks:
+            if truck.isAvailable:
+                return truck
+        return None
+
 
     def _consolidate_stops(self, route_stops: Route):
         """
@@ -114,7 +151,7 @@ class Scheduler:
             address = address.strip()
             if address == target_address:
                 return index
-        return None
+        raise Exception("Translate address not possible")
 
     def _truck_load_generator(self, package_list, truck_capacity=TRUCK_CAPACITY):
         count = 0
@@ -156,7 +193,7 @@ class Scheduler:
 
 
     def _sort_packages(self):
-        package_list = self.raw_data.to_list()
+        package_list = self.package_hash.to_list()
         for package in package_list:
             if package.has_special_status():
                 special = package.get_special_status()
@@ -168,15 +205,19 @@ class Scheduler:
         # sort packages by deadline time
         self.regular_packages.sort(key=lambda x: (x.deadline, x.address))
 
+
     def build_route_schedule(self, route, departure_time=datetime.datetime(2000, 1, 1, hour=9, minute=30, second=0)):
         schedule = []
         current_time = departure_time
+        total_distance = 0
         for stop in route:
             stop_str = ""
-            current_time = current_time + datetime.timedelta(hours=stop.travel_time)
+            current_time += datetime.timedelta(hours=stop.travel_time)
+            total_distance += stop.distance_to
             if stop.packages:
                 for package in stop.packages:
-                    stop_str += "{} {} {} {} Delivery Time: {}\n".format(package.id, package.address, package.city, package.zip, current_time)
+                    stop_str += "{} {} {} {} Delivery Time: {}"\
+                        .format(package.id, package.address, package.city, package.zip, current_time.strftime("%I:%M %p"))
                 schedule.append(stop_str)
         return schedule
 

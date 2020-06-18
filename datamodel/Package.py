@@ -16,6 +16,7 @@ class Package:
             self.deadline = datetime.datetime.strptime(deadline, "%I:%M %p")
         self.mass = mass
         self.status = status
+        self.delivered = None
         self.special = {
             "truck": None,
             "delayed": None,
