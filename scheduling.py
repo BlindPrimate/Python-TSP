@@ -21,10 +21,10 @@ def build_package_table(package_data):
 
             # handle special package instructions  -- naive
             if special_instuction:
-                package = Package(id, address, city, state, zip, deadline, AT_HUB, mass)
+                package = Package(id, address, city, state, zip, deadline, mass)
                 package.set_special_status(special_instuction)
             else:
-                package = Package(id, address, city, state, zip, deadline, AT_HUB, mass)
+                package = Package(id, address, city, state, zip, deadline,  mass)
             # insert into hash table with provided id for easier retrieval
             hash_table.insert(package, id)
     return hash_table
@@ -54,8 +54,8 @@ class Scheduler:
         self.regular_route_builder()
         self.special_route_builder()
 
-    def simulate_day(self):
-        while self.current_time < END_OF_DAY:
+    def simulate_day(self, end_time=END_OF_DAY):
+        while self.current_time < end_time:
             truck = self._get_truck()
             if len(self.regular_routes) > 0 and truck:
                 while len(self.regular_routes) > 0:
@@ -73,7 +73,6 @@ class Scheduler:
             for package in stop.packages:
                 package.delivered = current_time
                 package.status = DELIVERED
-                print(current_time)
         truck.truck_returning_hub()
 
 
@@ -206,10 +205,10 @@ class Scheduler:
         self.regular_packages.sort(key=lambda x: (x.deadline, x.address))
 
 
-    def build_route_schedule(self, route, departure_time=datetime.datetime(2000, 1, 1, hour=9, minute=30, second=0)):
+    def build_route_schedule(self, route, departure_time=datetime.datetime(1999, 1, 1, hour=9, minute=30, second=0)):
         schedule = []
         current_time = departure_time
-        total_distance = 0
+        total_distance = -1
         for stop in route:
             stop_str = ""
             current_time += datetime.timedelta(hours=stop.travel_time)

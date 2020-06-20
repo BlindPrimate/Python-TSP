@@ -1,9 +1,10 @@
 import datetime
+from globals import *
 
 
 class Package:
 
-    def __init__(self, id, address, city, state, zip, deadline, mass, status, *special):
+    def __init__(self, id, address, city, state, zip, deadline, mass, status=AT_HUB, *special):
         self.id = id
         self.address = address
         self.city = city

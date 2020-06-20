@@ -25,7 +25,7 @@ class HashTable:
     def find(self, key):
         if isinstance(key, list):
             key = str(key)
-        hashkey = hash(key)
+        hashkey = hash(int(key))
         index = hashkey % self.n_buckets
         for item in self.array[index]:
             if item[0] == hashkey:

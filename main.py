@@ -3,18 +3,63 @@ import sys
 import datetime
 
 
+def build_route_schedule(route, departure_time=datetime.datetime(2000, 1, 1, hour=9, minute=30, second=0)):
+    schedule = []
+    current_time = departure_time
+    total_distance = 0
+    for stop in route:
+        stop_str = ""
+        current_time += datetime.timedelta(hours=stop.travel_time)
+        total_distance += stop.distance_to
+        if stop.packages:
+            for package in stop.packages:
+                stop_str += "Package ID:    {} Address: {} {} {}    Expected Delivery Time: {}" \
+                    .format(package.id, package.address, package.city, package.zip, current_time.strftime("%I:%M %p"))
+            schedule.append(stop_str)
+    return schedule
 
-def run_simulation(start_time):
+def get_package_info(hash_table, package_id):
+    try:
+        return hash_table.find(package_id)
+    except LookupError:
+        print("No such package found")
+
+def print_package_info(package):
+    string = "{}    {} {}, {}. {}".format(package.id, package.address, package.city, package.state, package.status)
+    print(string)
+
+def print_all_packages(hashtable):
+    for package in hashtable:
+        info = "{}    {} {}, {}. {}".format(package.id, package.address, package.city, package.state, package.status, package.delivered)
+        print(info)
+
+def input_time():
+    print("Time (24hr format): ")
+    while True:
+        try:
+            input_time = input("> ")
+            time = datetime.datetime.strptime(input_time, "%H:%M")
+            return time
+        except ValueError:
+            print("Time format not recognized, please use 24hr format (e.g. 14:00 for 6pm)")
+
+def input_package_id():
+    while True:
+        print("Enter a package ID: ")
+        try:
+            return int(input("# "))
+        except ValueError:
+            print("You entered something other than a number.  Please enter an integer (0, 1, 2, etc.)")
+
+
+if __name__ == "__main__":
     scheduler = Scheduler(2)
-    scheduler.simulate_day()
 
-
-
-def show_interface():
     while True:
         print("Choose an option:")
         print("1. Track Individual Package")
-        print("2. Display Route Schedules for the Day")
+        print("2. Display status of All Packages")
+        print("3. Display Route Schedules for the Day")
         print("\n")
         print("Type 'exit' to quit")
         print("\n")
@@ -23,24 +68,26 @@ def show_interface():
         if choice == "exit":
             sys.exit()
         elif int(choice) == 1:
-            print("individual package")
+            input_package_id()
+            time = input_time()
+            scheduler.simulate_day(time)
+            package = get_package_info(scheduler.package_hash, id)
+            print_package_info(package)
+            break
         elif int(choice) == 2:
-            print("All Route Schedules")
+            time = input_time()
+            scheduler.simulate_day(time)
+            print_all_packages(scheduler.package_hash)
+            break
+        elif int(choice) == 3:
+            for index, route in enumerate(scheduler.regular_routes):
+                print("Route {}".format(index + 1))
+                route_schedule = build_route_schedule(route)
+                for stop in route_schedule:
+                    print(stop)
+            break
         else:
             print("Sorry, we didn't recognize your input")
-
-
-
-if __name__ == "__main__":
-
-    start_of_day = datetime.datetime(2000, 1, 1, 9, 30)
-
-    run_simulation(start_of_day)
-
-    # show_interface()
-
-
-
 
 
 
