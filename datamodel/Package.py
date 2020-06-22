@@ -37,7 +37,7 @@ class Package:
         if status == "Can only be on truck 2":
             self.special["truck"] = 2
         elif status == "Delayed on flight---will not arrive to depot until 9:05 am":
-            self.special["delayed"] = datetime.time(9, 5, 0)
+            self.special["delayed"] = datetime.datetime(2000, 1, 1, 9, 5, 0)
         elif status == "Wrong address listed":
             self.special["wrong_address"] = True
         elif status == "Must be delivered with 15, 19":
@@ -49,7 +49,7 @@ class Package:
         elif status == "Must be delivered with 13, 15":
             self.special["deliver_with"] = [13, 15]
         elif status == "Delayed on flight---will not arrive to depot until 9:05 am":
-            self.special["delayed"] = datetime.time(9, 5, 0)
+            self.special["delayed"] = datetime.datetime(2000, 1, 1, 9, 5, 0)
         elif status == "Can only be on truck 2":
             self.special["truck"] = 2
 

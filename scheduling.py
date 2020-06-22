@@ -54,6 +54,7 @@ class Scheduler:
         self.regular_route_builder()
         self.special_route_builder()
 
+
     def simulate_day(self, end_time=END_OF_DAY):
         while self.current_time < end_time:
             truck = self._get_truck()
@@ -62,6 +63,35 @@ class Scheduler:
                     route = self.regular_routes.pop(0)
                     truck.set_route(route)
                     self.run_route(truck)
+            elif len(self.special_routes) > 0 and truck:
+                for route in self.special_routes:
+                    first_package = route[1].packages[0]
+                    if first_package.special["truck"]:
+                        desired_truck = self._get_truck(first_package.special["truck"])
+                        if desired_truck:
+                            desired_truck.set_route(route)
+                            self.special_routes.remove(route)
+                            self.run_route(desired_truck)
+                            break
+                    elif first_package.special["delayed"] and self.current_time >= first_package.special["delayed"]:
+                        truck.set_route(route)
+                        self.special_routes.remove(route)
+                        self.run_route(truck)
+                        break
+                    elif first_package.special["deliver_with"]:
+                        truck.set_route(route)
+                        self.special_routes.remove(route)
+                        self.run_route(truck)
+                        break
+                    elif first_package.special["wrong_address"] and self.current_time >= datetime.datetime(2000, 1, 1, 10, 20, 00):
+                        first_package.address = "410 S State"
+                        first_package.city = "Salt Lake City"
+                        first_package.state = "UT"
+                        first_package.zip = "84111"
+                        truck.set_route(route)
+                        self.special_routes.remove(route)
+                        self.run_route(truck)
+                        break
             advance_minute = datetime.timedelta(minutes=1)
             self.current_time += advance_minute
 
@@ -77,9 +107,11 @@ class Scheduler:
 
 
 
-    def _get_truck(self):
+    def _get_truck(self, *truck_id):
         for truck in self.trucks:
-            if truck.isAvailable:
+            if truck_id == truck.id and truck.isAvailable:
+                return truck
+            elif truck.isAvailable:
                 return truck
         return None
 

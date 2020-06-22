@@ -18,30 +18,46 @@ def build_route_schedule(route, departure_time=datetime.datetime(2000, 1, 1, hou
             schedule.append(stop_str)
     return schedule
 
+
 def get_package_info(hash_table, package_id):
     try:
         return hash_table.find(package_id)
     except LookupError:
         print("No such package found")
 
+
 def print_package_info(package):
-    string = "{}    {} {}, {}. {}".format(package.id, package.address, package.city, package.state, package.status)
-    print(string)
+    info = "{}    {} {}, {}. {} {} {}" \
+        .format(
+        package.id,
+        package.address,
+        package.city,
+        package.state,
+        package.zip,
+        package.status,
+        package.delivered.strftime("%I:%M %p")
+    )
+    print(info)
+
 
 def print_all_packages(hashtable):
-    for package in hashtable:
-        info = "{}    {} {}, {}. {}".format(package.id, package.address, package.city, package.state, package.status, package.delivered)
-        print(info)
+    packages = [i for i in hashtable]
+    packages.sort(key=lambda x: x.delivered)
+    for package in packages:
+        print_package_info(package)
+
 
 def input_time():
     print("Time (24hr format): ")
     while True:
         try:
-            input_time = input("> ")
-            time = datetime.datetime.strptime(input_time, "%H:%M")
-            return time
+            raw_time = input("> ")
+            time_obj = datetime.datetime.strptime(raw_time, "%H:%M")
+            time_obj = time_obj.replace(year=2000, day=1, month=1)
+            return time_obj
         except ValueError:
             print("Time format not recognized, please use 24hr format (e.g. 14:00 for 6pm)")
+
 
 def input_package_id():
     while True:
@@ -67,19 +83,19 @@ if __name__ == "__main__":
 
         if choice == "exit":
             sys.exit()
-        elif int(choice) == 1:
-            input_package_id()
+        elif int(choice) == 1:  # status of single package
+            id = input_package_id()
             time = input_time()
             scheduler.simulate_day(time)
             package = get_package_info(scheduler.package_hash, id)
             print_package_info(package)
             break
-        elif int(choice) == 2:
+        elif int(choice) == 2:  # status of all packages
             time = input_time()
             scheduler.simulate_day(time)
             print_all_packages(scheduler.package_hash)
             break
-        elif int(choice) == 3:
+        elif int(choice) == 3:  # print all routes at start of day
             for index, route in enumerate(scheduler.regular_routes):
                 print("Route {}".format(index + 1))
                 route_schedule = build_route_schedule(route)
@@ -88,6 +104,3 @@ if __name__ == "__main__":
             break
         else:
             print("Sorry, we didn't recognize your input")
-
-
-
