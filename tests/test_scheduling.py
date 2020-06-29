@@ -3,6 +3,8 @@ from datamodel import RoutePoint
 from datamodel import Package
 from datamodel import Route
 from scheduling import Scheduler
+from globals import DELIVERED
+from globals import END_OF_DAY
 
 
 class MyTestCase(unittest.TestCase):
@@ -37,9 +39,27 @@ class MyTestCase(unittest.TestCase):
 
     def test_total_route_time(self):
         test_route_1 = self.build_route([3, 11, 5, 20, 6, 22])
-        print(test_route_1.get_address_indexes())
         time_1 = test_route_1.total_route_time()
         self.assertAlmostEqual(1.94, time_1, 2)
+
+    def test_all_packages_delivered(self):
+        self.scheduler.simulate_day()
+        for i in self.scheduler.package_hash:
+            self.assertEqual(i.status, DELIVERED)
+
+    def test_all_packages_delivered_on_time(self):
+        self.scheduler.simulate_day()
+        for i in self.scheduler.package_hash:
+            self.assertLessEqual(i.delivered, END_OF_DAY)
+
+    def test_special_case_specific_truck(self):
+        self.scheduler.simulate_day()
+        special_packages = [3, 18, 36, 38]
+        for id in special_packages:
+            package = self.scheduler.package_hash.find(id)
+            self.assertEqual(2, package.delivered_by_truck.id)
+
+
 
 if __name__ == '__main__':
     unittest.main()

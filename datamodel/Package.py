@@ -18,6 +18,7 @@ class Package:
         self.mass = mass
         self.status = status
         self.delivered = None
+        self.delivered_by_truck = None
         self.special = {
             "truck": None,
             "delayed": None,

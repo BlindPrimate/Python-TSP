@@ -40,8 +40,8 @@ class Scheduler:
         self.special_routes = []
         self.regular_packages = []
         self.trucks = []
-        for id in range(1, num_of_trucks):
-            self.trucks.append(Truck(id))
+        for id in range(num_of_trucks):
+            self.trucks.append(Truck(id + 1))
         self.special_packages = {
             "truck": [],
             "delayed": [],
@@ -103,14 +103,18 @@ class Scheduler:
             for package in stop.packages:
                 package.delivered = current_time
                 package.status = DELIVERED
+                package.delivered_by_truck = truck
         truck.truck_returning_hub()
 
 
 
-    def _get_truck(self, *truck_id):
+    def _get_truck(self, truck_id=None):
         for truck in self.trucks:
-            if truck_id == truck.id and truck.isAvailable:
-                return truck
+            if truck_id:
+                if truck_id == truck.id and truck.isAvailable:
+                    return truck
+                else:
+                    continue
             elif truck.isAvailable:
                 return truck
         return None
