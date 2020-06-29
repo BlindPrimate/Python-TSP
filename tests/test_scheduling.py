@@ -53,11 +53,6 @@ class MyTestCase(unittest.TestCase):
         for i in self.scheduler.package_hash:
             self.assertLessEqual(i.delivered, END_OF_DAY)
 
-    def test_trucks_do_not_leave_early(self):
-        self.scheduler.simulate_day()
-        for i in self.scheduler.package_hash:
-
-
     def test_special_case_specific_truck(self):
         self.scheduler.simulate_day()
         special_packages = [3, 18, 36, 38]
