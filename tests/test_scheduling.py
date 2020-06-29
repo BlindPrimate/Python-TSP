@@ -1,4 +1,5 @@
 import unittest
+import datetime
 from datamodel import RoutePoint
 from datamodel import Package
 from datamodel import Route
@@ -52,12 +53,38 @@ class MyTestCase(unittest.TestCase):
         for i in self.scheduler.package_hash:
             self.assertLessEqual(i.delivered, END_OF_DAY)
 
+    def test_trucks_do_not_leave_early(self):
+        self.scheduler.simulate_day()
+        for i in self.scheduler.package_hash:
+
+
     def test_special_case_specific_truck(self):
         self.scheduler.simulate_day()
         special_packages = [3, 18, 36, 38]
         for id in special_packages:
             package = self.scheduler.package_hash.find(id)
             self.assertEqual(2, package.delivered_by_truck.id)
+
+    def test_special_case_same_truck_same_route(self):
+        self.scheduler.simulate_day()
+        special_packages = [13, 14, 15, 16, 19, 20]
+        first_package = self.scheduler.package_hash.find(special_packages[0])
+        count = 0
+        for id in special_packages:
+            package = self.scheduler.package_hash.find(id)
+            if package.delivered_by_truck.id == first_package.delivered_by_truck.id and \
+                    package.delivery_route == first_package.delivery_route:
+                count += 1
+        self.assertEqual(len(special_packages), count)
+
+
+    def test_special_case_cannot_leave_before_x(self):
+        self.scheduler.simulate_day()
+        special_packages = [6, 25, 28, 32]
+        special_time = datetime.datetime(2000, 1, 1, 9, 5, 0)  # 9:05am
+        for id in special_packages:
+            package = self.scheduler.package_hash.find(id)
+            self.assertGreater(package.delivered, special_time)
 
 
 

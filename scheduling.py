@@ -54,6 +54,11 @@ class Scheduler:
         self.regular_route_builder()
         self.special_route_builder()
 
+    def generate_route_id(self):
+        count = 0
+        while True:
+            count += 1
+            yield count
 
     def simulate_day(self, end_time=END_OF_DAY):
         while self.current_time < end_time:
@@ -61,10 +66,12 @@ class Scheduler:
             if len(self.regular_routes) > 0 and truck:
                 while len(self.regular_routes) > 0:
                     route = self.regular_routes.pop(0)
+                    route.route_id = self.generate_route_id()
                     truck.set_route(route)
                     self.run_route(truck)
             elif len(self.special_routes) > 0 and truck:
                 for route in self.special_routes:
+                    route.route_id = self.generate_route_id()
                     first_package = route[1].packages[0]
                     if first_package.special["truck"]:
                         desired_truck = self._get_truck(first_package.special["truck"])

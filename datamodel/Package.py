@@ -19,6 +19,7 @@ class Package:
         self.status = status
         self.delivered = None
         self.delivered_by_truck = None
+        self.delivery_route = None
         self.special = {
             "truck": None,
             "delayed": None,

@@ -34,6 +34,7 @@ class Route:
         if route is None:
             route = []
         csv = CSVImport()
+        self.route_id = 0
         self.route_stops = route
         self.distance_table = csv.import_distances()
         self.truck_id = 0
