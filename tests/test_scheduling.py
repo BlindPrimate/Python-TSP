@@ -3,7 +3,7 @@ import datetime
 from datamodel import RoutePoint
 from datamodel import Package
 from datamodel import Route
-from scheduling import Scheduler
+from scheduler.scheduling import Scheduler
 from globals import DELIVERED
 from globals import END_OF_DAY
 
@@ -71,7 +71,6 @@ class MyTestCase(unittest.TestCase):
                     package.delivery_route == first_package.delivery_route:
                 count += 1
         self.assertEqual(len(special_packages), count)
-
 
     def test_special_case_cannot_leave_before_x(self):
         self.scheduler.simulate_day()

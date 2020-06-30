@@ -1,9 +1,15 @@
-from scheduling import Scheduler
+from scheduler import Scheduler
 import sys
 import datetime
 
 
 def build_route_schedule(route, departure_time=datetime.datetime(2000, 1, 1, hour=9, minute=30, second=0)):
+    """
+
+    :param route:
+    :param departure_time:
+    :return:
+    """
     schedule = []
     current_time = departure_time
     total_distance = 0
@@ -41,6 +47,10 @@ def print_package_info(package):
 
 
 def print_all_packages(hashtable):
+    """
+    Builds and displays package data for all packages currently in hash table.
+    :return:
+    """
     packages = [i for i in hashtable]
     packages.sort(key=lambda x: x.delivered)
     for package in packages:
@@ -48,6 +58,10 @@ def print_all_packages(hashtable):
 
 
 def input_time():
+    """
+    Builds and displays UI for inputting package time.
+    :return:
+    """
     print("Time (24hr format): ")
     while True:
         try:
@@ -60,6 +74,10 @@ def input_time():
 
 
 def input_package_id():
+    """
+    Builds and displays UI for inputting package ID.
+    :return:
+    """
     while True:
         print("Enter a package ID: ")
         try:
