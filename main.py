@@ -1,6 +1,17 @@
+##################
+# Name: Eric Cleek
+# ID: 001172916
+##################
+
 from scheduler import Scheduler
 import sys
 import datetime
+
+# Majority of the logic is here including the route algorithms
+
+
+
+
 
 
 def build_route_schedule(route, departure_time=datetime.datetime(2000, 1, 1, hour=9, minute=30, second=0)):

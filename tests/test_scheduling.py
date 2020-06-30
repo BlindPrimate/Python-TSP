@@ -80,6 +80,9 @@ class MyTestCase(unittest.TestCase):
             package = self.scheduler.package_hash.find(id)
             self.assertGreater(package.delivered, special_time)
 
+    def test_mileage_under_spec(self):
+        self.scheduler.simulate_day()
+        self.assertLessEqual(self.scheduler.total_distance_traveled, 140)
 
 
 if __name__ == '__main__':

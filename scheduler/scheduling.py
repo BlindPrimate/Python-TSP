@@ -47,6 +47,7 @@ class Scheduler:
         self.special_routes = []
         self.regular_packages = []
         self.trucks = []
+        self.total_distance_traveled = 0
 
         # generate trucks
         for id in range(num_of_trucks):
@@ -94,6 +95,7 @@ class Scheduler:
 
             # handle special routes after regulars
             elif len(self.special_routes) > 0 and truck:
+                final_special_route = Route()
                 # more logic required to handle special cases
                 for route in self.special_routes:
                     route.route_id = self._generate_route_id()
@@ -140,6 +142,7 @@ class Scheduler:
         current_time = self.current_time
         for stop in truck.route:
             current_time += datetime.timedelta(hours=stop.travel_time)
+            self.total_distance_traveled += stop.distance_to
             for package in stop.packages:
                 package.delivered = current_time
                 package.status = DELIVERED
@@ -286,10 +289,10 @@ class Scheduler:
             if package.has_special_status():
                 special = package.get_special_status()
                 self.special_packages[special].append(package)
-                self.special_packages[special].sort(key=lambda x: (x.deadline, x.address))
             else:
                 self.regular_packages.append(package)
 
-        # sort packages by deadline time
+        # sort packages by deadline time and address(to keep packages going to same address together)
+        self.special_packages[special].sort(key=lambda x: (x.deadline, x.address))
         self.regular_packages.sort(key=lambda x: (x.deadline, x.address))
 
