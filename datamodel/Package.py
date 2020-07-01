@@ -12,9 +12,10 @@ class Package:
         self.zip = zip
         self.address_index = None
         if deadline == "EOD":
-            self.deadline = datetime.datetime.strptime("5:30 pm", "%I:%M %p")
+            self.deadline = END_OF_DAY
         else:
             self.deadline = datetime.datetime.strptime(deadline, "%I:%M %p")
+            self.deadline = self.deadline.replace(2000, 1, 1)
         self.mass = mass
         self.status = status
         self.delivered = None

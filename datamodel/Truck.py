@@ -9,6 +9,7 @@ class Truck:
         self.route = []
         self.speed = 18
         self.isAvailable = True
+        self.nextAvailable = None
 
     def set_route(self, route):
         self.route = route

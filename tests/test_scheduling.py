@@ -46,12 +46,12 @@ class MyTestCase(unittest.TestCase):
     def test_all_packages_delivered(self):
         self.scheduler.simulate_day()
         for i in self.scheduler.package_hash:
-            self.assertEqual(i.status, DELIVERED)
+            self.assertEqual(DELIVERED, i.status, "Not all packages were delivered")
 
     def test_all_packages_delivered_on_time(self):
         self.scheduler.simulate_day()
         for i in self.scheduler.package_hash:
-            self.assertLessEqual(i.delivered, END_OF_DAY)
+            self.assertLessEqual(i.delivered, END_OF_DAY, "Not all packages were delivered on time")
 
     def test_special_case_specific_truck(self):
         self.scheduler.simulate_day()
