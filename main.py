@@ -5,6 +5,7 @@
 
 from scheduler import Scheduler
 import datetime
+import sys
 
 # Majority of the logic is here including the route algorithms
 
@@ -62,8 +63,10 @@ def print_all_packages(hashtable):
     :return:
     """
     packages = [i for i in hashtable]
-    packages.sort(key=lambda x: x.delivered)
+
+    # packages.sort(key=lambda x: x.delivered)
     for package in packages:
+        print(package.status)
         print_package_info(package)
 
 
@@ -98,38 +101,38 @@ def input_package_id():
 
 if __name__ == "__main__":
     scheduler = Scheduler(2)
-    scheduler.simulate_day()
 
-    # while True:
-    #     print("Choose an option:")
-    #     print("1. Track Individual Package")
-    #     print("2. Display status of All Packages")
-    #     print("3. Display Route Schedules for the Day")
-    #     print("\n")
-    #     print("Type 'exit' to quit")
-    #     print("\n")
-    #     choice = input("> ")
-    #
-    #     if choice == "exit":
-    #         sys.exit()
-    #     elif int(choice) == 1:  # status of single package
-    #         id = input_package_id()
-    #         time = input_time()
-    #         scheduler.simulate_day(time)
-    #         package = get_package_info(scheduler.package_hash, id)
-    #         print_package_info(package)
-    #         break
-    #     elif int(choice) == 2:  # status of all packages
-    #         time = input_time()
-    #         scheduler.simulate_day(time)
-    #         print_all_packages(scheduler.package_hash)
-    #         break
-    #     elif int(choice) == 3:  # print all routes at start of day
-    #         for index, route in enumerate(scheduler.regular_routes):
-    #             print("Route {}".format(index + 1))
-    #             route_schedule = build_route_schedule(route)
-    #             for stop in route_schedule:
-    #                 print(stop)
-    #         break
-    #     else:
-    #         print("Sorry, we didn't recognize your input")
+    while True:
+        print("Choose an option:")
+        print("1. Track Individual Package")
+        print("2. Display status of All Packages")
+        print("3. Display Route Schedules for the Day")
+        print("\n")
+        print("Type 'exit' to quit")
+        print("\n")
+        choice = input("> ")
+
+        if choice == "exit":
+            sys.exit()
+        elif int(choice) == 1:  # status of single package
+            id = input_package_id()
+            time = input_time()
+            scheduler.simulate_day(time)
+            package = get_package_info(scheduler.package_hash, id)
+            print_package_info(package)
+            break
+        elif int(choice) == 2:  # status of all packages
+            time = input_time()
+            scheduler.simulate_day(time)
+            print_all_packages(scheduler.package_hash)
+            break
+        elif int(choice) == 3:  # print all routes at start of day
+            pass
+            # for index, route in enumerate(scheduler.regular_routes):
+            #     print("Route {}".format(index + 1))
+            #     route_schedule = build_route_schedule(route)
+            #     for stop in route_schedule:
+            #         print(stop)
+            # break
+        else:
+            print("Sorry, we didn't recognize your input")

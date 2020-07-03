@@ -7,6 +7,7 @@ from datamodel import Truck
 from datamodel.hashtable import HashTable
 import datetime
 from sys import maxsize
+from .truck_load import TruckLoad
 
 
 # helper functions
@@ -38,82 +39,12 @@ def build_package_table(package_data):
     return hash_table
 
 
-class TruckLoadGenerator:
-    def __init__(self, packages):
-        self.packages = packages
-        self.regular_packages = []
-        self.priority_packages = []
-        self.truck_loads = []
-
-        # give truck some empty space to except special packages on routes
-        self.effective_truck_capacity = int(round(TRUCK_CAPACITY - TRUCK_CAPACITY * 0.3))
-        self.special_packages = {
-            "truck": [],
-            "delayed": [],
-            "deliver_with": [],
-            "wrong_address": [],
-        }
-
-        self.packages.sort(key=lambda x: (x.deadline, x.address))
-        self._sort_packages()
-
-    def _sort_packages(self):
-        address_clusters = {}
-
-        # sort priority, special, and regular packages
-        for package in self.packages:
-            if package.has_special_status():
-                special = package.get_special_status()
-                self.special_packages[special].append(package)
-            elif package.deadline != END_OF_DAY:
-                self.priority_packages.append(package)
-            else:
-                self.regular_packages.append(package)
-
-        # regular package sort into address clusters
-        for package in self.regular_packages:
-            if package.address in address_clusters.keys():
-                address_clusters[package.address].append(package)
-            else:
-                address_clusters[package.address] = [package]
-
-        self.truck_loads = self._load_split(self.priority_packages) + self._load_split(self.regular_packages)
-
-
-    def _load_split(self, packages):
-        result = []
-        count = 0
-        while count <= len(packages):
-            # check if previous loads are to full effective truck capacity -- fill if not
-            if result:
-                for load in result:
-                    if len(load) < self.effective_truck_capacity:
-                        space_remaining = self.effective_truck_capacity - len(load)
-                        while space_remaining:
-                            load.append(packages[count])
-                            count += 1
-                            space_remaining -= 1
-
-            # cut sorted_packages into spans of TRUCK_CAPACITY size
-            if count + self.effective_truck_capacity == len(packages):
-                break
-            if count + self.effective_truck_capacity > len(packages):
-                result.append(packages[count:])
-                count += self.effective_truck_capacity
-            else:
-                result.append(packages[count:count + self.effective_truck_capacity])
-                count += self.effective_truck_capacity
-        return result
-
 class Scheduler:
     def __init__(self, num_of_trucks):
         data = io.CSVImport()
         self.package_hash = build_package_table(data.import_packages())
         self.address_table = data.import_addresses()
         self.distance_table = data.import_distances()
-        self.regular_routes = []
-        self.special_routes = []
-        self.regular_packages = []
         self.trucks = []
         self.total_distance_traveled = 0
 
@@ -130,23 +61,80 @@ class Scheduler:
 
         self.current_time = START_OF_DAY
 
-        # function calls to build routes
-        self._regular_route_builder()
-        self._special_route_builder()
+        truck_loader = TruckLoad(self.package_hash.to_list())
 
+        # build routes
+        self.special_packages = truck_loader.special_packages
 
+        self.final_loads = truck_loader.truck_loads
+
+    def _can_fit_in_load(self, load, n_items_to_add=0):
+        return len(load) + n_items_to_add < TRUCK_CAPACITY
+
+    def _add_special_packages_to_load(self, load, truck=None):
+        delayed_packages = self.special_packages["delayed"]
+        group_packages = self.special_packages["deliver_with"]
+        wrong_address_package = self.special_packages["wrong_address"][0]
+        requested_truck_packages = self.special_packages["truck"]
+        if truck and load and self._can_fit_in_load(load, len(requested_truck_packages)):
+            load += requested_truck_packages
+            requested_truck_packages.clear()
+
+        while self._can_fit_in_load(load):
+            if delayed_packages:
+                for package in delayed_packages:
+                    if package.special["delayed"] >= self.current_time:
+                        load.append(package)
+                        delayed_packages.remove(package)
+            # packages delivered together
+            elif group_packages:
+                if self._can_fit_in_load(load, len(group_packages)):
+                    load += group_packages
+                    group_packages = []
+                else:
+                    break
+            # package with wrong address
+            elif wrong_address_package and \
+                    self.current_time >= datetime.datetime(2000, 1, 1, 10, 20, 00):
+                wrong_address_package.address = "410 S State St"
+                wrong_address_package.city = "Salt Lake City"
+                wrong_address_package.state = "UT"
+                wrong_address_package.zip = "84111"
+                load.append(wrong_address_package)
+            else:
+                break
+        return load
+
+    def _build_route(self, packages):
+        route = Route()
+        route.route_id = self._generate_route_id()
+        for package in packages:
+            address_index = self._translate_address(package.address)
+            package.address_index = address_index
+        for stop in self._stop_generator(packages):
+            route.add_stop(stop)
+        route = self._optimize_route(route)
+        return route
+
+    def _get_truck(self, truck_id: int = None):
+        """
+        Returns truck if not currently in use.
+
+        :param truck_id: ID of specific truck
+        :return Truck: if truck available
+        """
+        for truck in self.trucks:
+            if truck_id == truck.id and truck.is_truck_available(self.current_time):
+                return truck
+            elif truck.is_truck_available(self.current_time):
+                return truck
+        return None
 
     def _is_truck_available(self):
         for truck in self.trucks:
-            if truck.isAvailable:
+            if truck.next_available > self.current_time:
                 return True
         return False
-
-    def _has_truck_returned(self):
-        for truck in self.trucks:
-            if truck.nextAvailable > self.current_time:
-                return truck
-        return None
 
 
     def _generate_route_id(self):
@@ -154,6 +142,7 @@ class Scheduler:
         while True:
             count += 1
             yield count
+
 
     def simulate_day(self, end_time=END_OF_DAY):
         """
@@ -164,64 +153,32 @@ class Scheduler:
         :param end_time:
         :return:
         """
-
-        builder = TruckLoadGenerator(self.package_hash.to_list())
-        for i in builder.truck_loads:
-            print(len(i))
-            print(i)
         while self.current_time < end_time:
-            truck = self._has_truck_returned()
 
-            if truck:
-                truck.truck_returning_hub()
+            truck = self._get_truck()
 
-            if self._is_truck_available():
-                truck = self._get_truck()
-            else:
-                continue
+            if truck and self.final_loads:
+                load = self.final_loads.pop(0)
+                if truck.id == 2:
+                    load = self._add_special_packages_to_load(load, truck)
+                else:
+                    load = self._add_special_packages_to_load(load, truck)
 
-            final_route = Route()
-            final_route.route_id = self._generate_route_id()
+                route = self._build_route(load)
+                truck.set_route(route)
+                self._run_route(truck)
 
-            while truck and len(final_route) <= TRUCK_CAPACITY:
-                if self.special_routes:
-                    for route in self.special_routes:
-                        # get first package in route
-                        first_package = route[1].packages[0]
-                        # specific truck
-                        if first_package.special["truck"]:
-                            desired_truck = self._get_truck(first_package.special["truck"])
-                            if desired_truck:
-                                truck = desired_truck
-                                final_route += route
-                        # delayed delivery
-                        elif first_package.special["delayed"] and self.current_time >= first_package.special["delayed"]:
-                            truck.set_route(route)
-                            self.special_routes.remove(route)
-                            self._run_route(truck)
-                        # packages delivered together
-                        elif first_package.special["deliver_with"]:
-                            truck.set_route(route)
-                            self.special_routes.remove(route)
-                            self._run_route(truck)
-                            break
-                        # package with wrong address
-                        elif first_package.special["wrong_address"] and self.current_time >= datetime.datetime(2000, 1,
-                                                                                                               1,
-                                                                                                               10, 20,
-                                                                                                               00):
-                            first_package.address = "410 S State"
-                            first_package.city = "Salt Lake City"
-                            first_package.state = "UT"
-                            first_package.zip = "84111"
-                            truck.set_route(route)
-                            self.special_routes.remove(route)
-                            self._run_route(truck)
-                            break
-                # advance day by one minute
+            # check for any last special packages not added to previous routes after day is complete
+            if not self.final_loads:
+                truck = self._get_truck(2)
+                if truck:
+                    overflow_load = self._add_special_packages_to_load([], 2)
+                    overflow_route = self._build_route(overflow_load)
+                    truck.set_route(overflow_route)
+                    self._run_route(truck)
+
             advance_minute = datetime.timedelta(minutes=1)
             self.current_time += advance_minute
-
 
     def _run_route(self, truck):
         truck.truck_departing_hub()
@@ -233,24 +190,13 @@ class Scheduler:
                 package.delivered = current_time
                 package.status = DELIVERED
                 package.delivered_by_truck = truck
-        truck.truck_returning_hub()
+        truck.truck_returning_hub(current_time)
 
-    def _get_truck(self, truck_id: int = None):
-        """
-        Returns truck if not currently in use.
 
-        :param truck_id: ID of specific truck
-        :return Truck: if truck available
-        """
-        for truck in self.trucks:
-            if truck_id:
-                if truck_id == truck.id and truck.isAvailable:
-                    return truck
-                else:
-                    continue
-            elif truck.isAvailable:
-                return truck
-        return None
+    def _stop_generator(self, packages):
+        for package in packages:
+            stop = RoutePoint(package.address_index, [package])
+            yield stop
 
     def _consolidate_stops(self, route_stops: Route):
         """
@@ -273,12 +219,7 @@ class Scheduler:
                         consolidated_stop.packages.extend(stop.packages)
         return Route(consolidated)
 
-    def _stop_generator(self, packages):
-        for package in packages:
-            stop = RoutePoint(package.address_index, [package])
-            yield stop
-
-    def _optimize_route(self, route_stops: list) -> Route:
+    def _optimize_route(self, route_stops: Route) -> Route:
         """
         Optimizes route based on distance between stops.
 
@@ -331,48 +272,6 @@ class Scheduler:
                 return index
         raise Exception("Translate address not possible")
 
-    def _truck_load_generator(self, package_list, truck_capacity=TRUCK_CAPACITY):
-        count = 0
-        # cut sorted_packages into spans of TRUCK_CAPACITY size
-        while count <= len(package_list):
-            if count + truck_capacity == len(package_list):
-                break
-            if count + truck_capacity > len(package_list):
-                yield package_list[count:]
-            else:
-                yield package_list[count:count + truck_capacity]
-            count += truck_capacity
-
-    def _regular_route_builder(self):
-        self._sort_packages()
-        # regular routes
-        for load in self._truck_load_generator(self.regular_packages):
-            route = Route()
-            for package in load:
-                address_index = self._translate_address(package.address)
-                package.address_index = address_index
-            for stop in self._stop_generator(load):
-                route.add_stop(stop)
-            route = self._optimize_route(route)
-            self.regular_routes.append(route)
-
-    def _special_route_builder(self):
-        self._sort_packages()
-        # special routes
-        for special_type in self.special_packages.values():
-            route = Route()
-            for package in special_type:
-                address_index = self._translate_address(package.address)
-                package.address_index = address_index
-            for stop in self._stop_generator(special_type):
-                route.add_stop(stop)
-            route = self._optimize_route(route)
-            self.special_routes.append(route)
-
-
-
-    def _sort_packages(self):
-        package_list = self.package_hash.to_list()
 
 
 
