@@ -69,28 +69,29 @@ class Scheduler:
         self.final_loads = truck_loader.truck_loads
 
     def _can_fit_in_load(self, load, n_items_to_add=0):
-        return len(load) + n_items_to_add < TRUCK_CAPACITY
+        return len(load) + n_items_to_add <= TRUCK_CAPACITY
 
-    def _add_special_packages_to_load(self, load, truck=None):
+    def _add_special_packages_to_load(self, load, truck):
         delayed_packages = self.special_packages["delayed"]
         group_packages = self.special_packages["deliver_with"]
-        wrong_address_package = self.special_packages["wrong_address"][0]
         requested_truck_packages = self.special_packages["truck"]
-        if truck and load and self._can_fit_in_load(load, len(requested_truck_packages)):
+
+        if self.special_packages["wrong_address"]:
+            wrong_address_package = self.special_packages["wrong_address"][0]
+        else:
+            wrong_address_package = None
+
+        if truck.id == 2 and self._can_fit_in_load(load, len(requested_truck_packages)):
             load += requested_truck_packages
-            requested_truck_packages.clear()
+            self.special_packages["truck"].clear()
 
         while self._can_fit_in_load(load):
-            if delayed_packages:
-                for package in delayed_packages:
-                    if package.special["delayed"] >= self.current_time:
-                        load.append(package)
-                        delayed_packages.remove(package)
+
             # packages delivered together
-            elif group_packages:
+            if group_packages:
                 if self._can_fit_in_load(load, len(group_packages)):
                     load += group_packages
-                    group_packages = []
+                    self.special_packages["deliver_with"].clear()
                 else:
                     break
             # package with wrong address
@@ -101,6 +102,13 @@ class Scheduler:
                 wrong_address_package.state = "UT"
                 wrong_address_package.zip = "84111"
                 load.append(wrong_address_package)
+                self.special_packages["wrong_address"] = None
+            elif delayed_packages:
+                for package in delayed_packages:
+                    if self.current_time >= package.special["delayed"]:
+                        load.append(package)
+                        delayed_packages.remove(package)
+                break
             else:
                 break
         return load
@@ -136,13 +144,11 @@ class Scheduler:
                 return True
         return False
 
-
     def _generate_route_id(self):
         count = 0
         while True:
             count += 1
             yield count
-
 
     def simulate_day(self, end_time=END_OF_DAY):
         """
@@ -159,20 +165,17 @@ class Scheduler:
 
             if truck and self.final_loads:
                 load = self.final_loads.pop(0)
-                if truck.id == 2:
-                    load = self._add_special_packages_to_load(load, truck)
-                else:
-                    load = self._add_special_packages_to_load(load, truck)
+                load = self._add_special_packages_to_load(load, truck)
 
                 route = self._build_route(load)
                 truck.set_route(route)
                 self._run_route(truck)
 
             # check for any last special packages not added to previous routes after day is complete
-            if not self.final_loads:
+            if self.special_packages.values():
                 truck = self._get_truck(2)
                 if truck:
-                    overflow_load = self._add_special_packages_to_load([], 2)
+                    overflow_load = self._add_special_packages_to_load([], truck)
                     overflow_route = self._build_route(overflow_load)
                     truck.set_route(overflow_route)
                     self._run_route(truck)
