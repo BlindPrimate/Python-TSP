@@ -81,7 +81,7 @@ class Scheduler:
         else:
             wrong_address_package = None
 
-        if truck.id == 2 and self._can_fit_in_load(load, len(requested_truck_packages)):
+        if requested_truck_packages and truck.id == 2 and self._can_fit_in_load(load, len(requested_truck_packages)):
             load += requested_truck_packages
             self.special_packages["truck"].clear()
 

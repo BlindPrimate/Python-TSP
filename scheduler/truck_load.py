@@ -56,7 +56,7 @@ class TruckLoad:
                 load += cluster
             else:
                 result.append(load)
-                load = [cluster]
+                load = cluster
         else:
             if load:
                 result.append(load)

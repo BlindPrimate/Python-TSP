@@ -44,7 +44,7 @@ def get_package_info(hash_table, package_id):
 
 
 def print_package_info(package):
-    info = "{}    {} {}, {}. {} {} {}" \
+    info = "{}    {} {}, {}. {} {} {} Truck: {}" \
         .format(
         package.id,
         package.address,
@@ -52,7 +52,8 @@ def print_package_info(package):
         package.state,
         package.zip,
         package.status,
-        package.delivered.strftime("%I:%M %p")
+        package.delivered.strftime("%I:%M %p"),
+        package.delivered_by_truck.id
     )
     print(info)
 
