@@ -16,8 +16,8 @@ def build_package_table(package_data):
     Builds package hash table for easy access of package data.
 
     Uses provided package data to build a hash table data structure with helper methods
-    :param package_data:
-    :return:
+    :param package_data: CSV data
+    :return: None
     """
     hash_table = HashTable(45)
 
@@ -72,21 +72,29 @@ class Scheduler:
         return len(load) + n_items_to_add <= TRUCK_CAPACITY
 
     def _add_special_packages_to_load(self, load, truck):
+        """
+        Adds special packages to a load if space available
+        :param load: Load of Packages
+        :param truck: Truck(obj)
+        :return: new_load: Load of Packages
+        """
         delayed_packages = self.special_packages["delayed"]
         group_packages = self.special_packages["deliver_with"]
         requested_truck_packages = self.special_packages["truck"]
 
+        # wrong address packages
         if self.special_packages["wrong_address"]:
             wrong_address_package = self.special_packages["wrong_address"][0]
         else:
             wrong_address_package = None
 
+        # specific truck packages
         if requested_truck_packages and truck.id == 2 and self._can_fit_in_load(load, len(requested_truck_packages)):
             load += requested_truck_packages
             self.special_packages["truck"].clear()
 
+        # remainder of special packages
         while self._can_fit_in_load(load):
-
             # packages delivered together
             if group_packages:
                 if self._can_fit_in_load(load, len(group_packages)):
@@ -114,13 +122,22 @@ class Scheduler:
         return load
 
     def _build_route(self, packages):
+        """
+        Builds, consolidates and optimizes a route from provided package list.
+        :param packages:
+        :return: Route(obj)
+        """
         route = Route()
+        # give id to route
         route.route_id = self._generate_route_id()
+        # find address of packages and add to package
         for package in packages:
             address_index = self._translate_address(package.address)
             package.address_index = address_index
+        # convert package data into stops
         for stop in self._stop_generator(packages):
             route.add_stop(stop)
+        # optimize route
         route = self._optimize_route(route)
         return route
 
@@ -129,20 +146,16 @@ class Scheduler:
         Returns truck if not currently in use.
 
         :param truck_id: ID of specific truck
-        :return Truck: if truck available
+        :return Truck: If truck available
         """
         for truck in self.trucks:
+            # if provided a specific truck id, check if available at current time
             if truck_id == truck.id and truck.is_truck_available(self.current_time):
                 return truck
+            # else get any truck that is available at this time
             elif truck.is_truck_available(self.current_time):
                 return truck
         return None
-
-    def _is_truck_available(self):
-        for truck in self.trucks:
-            if truck.next_available > self.current_time:
-                return True
-        return False
 
     def _generate_route_id(self):
         count = 0
@@ -156,15 +169,17 @@ class Scheduler:
 
         Uses optional parameter for end of day to calculate from beginning to
         day to provided end point or global end of day.  Time advances by a minute per cycle.
-        :param end_time:
-        :return:
+        :param end_time: End of day
+        :return: Void
         """
         while self.current_time < end_time:
 
             truck = self._get_truck()
 
+            # if any regualar loads remain
             if truck and self.final_loads:
                 load = self.final_loads.pop(0)
+                # check for any special packages that could be added
                 load = self._add_special_packages_to_load(load, truck)
 
                 route = self._build_route(load)
@@ -180,6 +195,7 @@ class Scheduler:
                     truck.set_route(overflow_route)
                     self._run_route(truck)
 
+            # advance time of day by one minute
             advance_minute = datetime.timedelta(minutes=1)
             self.current_time += advance_minute
 
