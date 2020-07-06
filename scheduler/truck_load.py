@@ -1,4 +1,5 @@
 from globals import *
+from itertools import groupby
 
 
 class TruckLoad:
@@ -9,7 +10,7 @@ class TruckLoad:
         self.truck_loads = []
 
         # give truck some empty space to except special packages on routes
-        self.effective_truck_capacity = int(round(TRUCK_CAPACITY - TRUCK_CAPACITY * 0.2))
+        self.effective_truck_capacity = int(round(TRUCK_CAPACITY - TRUCK_CAPACITY * 0.1))
         self.special_packages = {
             "truck": [],
             "delayed": [],
@@ -36,32 +37,30 @@ class TruckLoad:
             else:
                 self.regular_packages.append(package)
 
-        all_loads = self.priority_packages + self.regular_packages
-        self.truck_loads = self._load_split(all_loads)
+        # split packages into groups of packages based on address
+        self.priority_packages = [list(i) for j, i in groupby(self.priority_packages, lambda x: x.address)]
+        self.regular_packages = [list(i) for j, i in groupby(self.regular_packages, lambda x: x.address)]
 
-    def _load_split(self, packages):
+        package_clusters = self.priority_packages + self.regular_packages
+        self.truck_loads = self._load_split(package_clusters)
+
+    def _load_split(self, package_clusters):
         result = []
-        count = 0
-        while count <= len(packages):
-            # check if previous loads are to full effective truck capacity -- fill if not
-            if result:
-                for load in result:
-                    if len(load) < self.effective_truck_capacity:
-                        space_remaining = self.effective_truck_capacity - len(load)
-                        while space_remaining:
-                            load.append(packages[count])
-                            count += 1
-                            space_remaining -= 1
+        load = []
+        for cluster in package_clusters:
+            if len(load) >= self.effective_truck_capacity:
+                result.append(load)
+                load = []
 
-            # cut sorted_packages into spans of TRUCK_CAPACITY size
-            if count + self.effective_truck_capacity == len(packages):
-                break
-            if count + self.effective_truck_capacity > len(packages):
-                result.append(packages[count:])
-                count += self.effective_truck_capacity
+            if len(load) + len(cluster) <= self.effective_truck_capacity:
+                load += cluster
             else:
-                result.append(packages[count:count + self.effective_truck_capacity])
-                count += self.effective_truck_capacity
+                result.append(load)
+                load = [cluster]
+        else:
+            if load:
+                result.append(load)
         return result
+
 
 

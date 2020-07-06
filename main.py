@@ -66,7 +66,6 @@ def print_all_packages(hashtable):
 
     # packages.sort(key=lambda x: x.delivered)
     for package in packages:
-        print(package.status)
         print_package_info(package)
 
 
