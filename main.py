@@ -44,17 +44,29 @@ def get_package_info(hash_table, package_id):
 
 
 def print_package_info(package):
-    info = "{}    {} {}, {}. {} {} {} Truck: {}" \
-        .format(
-        package.id,
-        package.address,
-        package.city,
-        package.state,
-        package.zip,
-        package.status,
-        package.delivered.strftime("%I:%M %p"),
-        package.delivered_by_truck.id
-    )
+    if not package.delivered:
+        info = "{}    {} {}, {}. {} {}" \
+            .format(
+            package.id,
+            package.address,
+            package.city,
+            package.state,
+            package.zip,
+            package.status,
+        )
+    else:
+        info = "{}    {} {}, {}. {} {} {} Truck: {}" \
+            .format(
+            package.id,
+            package.address,
+            package.city,
+            package.state,
+            package.zip,
+            package.status,
+            package.delivered.strftime("%I:%M %p"),
+            package.delivered_by_truck.id
+        )
+
     print(info)
 
 
@@ -106,7 +118,6 @@ if __name__ == "__main__":
         print("Choose an option:")
         print("1. Track Individual Package")
         print("2. Display status of All Packages")
-        print("3. Display Route Schedules for the Day")
         print("\n")
         print("Type 'exit' to quit")
         print("\n")
@@ -125,14 +136,7 @@ if __name__ == "__main__":
             time = input_time()
             scheduler.simulate_day(time)
             print_all_packages(scheduler.package_hash)
+            print("Total Mileage: {}".format(scheduler.total_distance_traveled))
             break
-        elif int(choice) == 3:  # print all routes at start of day
-            pass
-            # for index, route in enumerate(scheduler.regular_routes):
-            #     print("Route {}".format(index + 1))
-            #     route_schedule = build_route_schedule(route)
-            #     for stop in route_schedule:
-            #         print(stop)
-            # break
         else:
             print("Sorry, we didn't recognize your input")

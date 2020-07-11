@@ -19,6 +19,9 @@ def build_package_table(package_data):
     :param package_data: CSV data
     :return: None
     """
+
+    # O(n)
+
     hash_table = HashTable(45)
 
     for row in package_data:
@@ -68,6 +71,154 @@ class Scheduler:
 
         self.final_loads = truck_loader.truck_loads
 
+
+
+    def simulate_day(self, end_time=END_OF_DAY):
+        """
+        Simulates a day of deliveries.
+
+        Uses optional parameter for end of day to calculate from beginning to
+        day to provided end point or global end of day.  Time advances by a minute per cycle.
+        :param end_time: End of day
+        :return: Void
+        """
+        # O(n)
+        while self.current_time < end_time:
+
+            truck = self._get_truck()
+
+            # if any regualar loads remain
+            if truck and self.final_loads:
+                load = self.final_loads.pop(0)
+                # check for any special packages that could be added
+                load = self._add_special_packages_to_load(load, truck)
+
+                route = self._build_route(load)
+                truck.set_route(route)
+                self._run_route(truck)
+
+            # check for any last special packages not added to previous routes after day is complete
+            if self.special_packages.values():
+                truck = self._get_truck(2)
+                if truck:
+                    overflow_load = self._add_special_packages_to_load([], truck)
+                    overflow_route = self._build_route(overflow_load)
+                    truck.set_route(overflow_route)
+                    self._run_route(truck)
+
+            # advance time of day by one minute
+            advance_minute = datetime.timedelta(minutes=1)
+            self.current_time += advance_minute
+
+    ##################
+    # primary algorithm for route optimization
+    ##################
+    def _optimize_route(self, route_stops: Route) -> Route:
+        """
+        Optimizes route based on distance between stops.
+
+        :param route_stops:
+        :return Route:
+        """
+        # O(n^2)
+
+        # clear duplicates
+        route = self._consolidate_stops(route_stops)
+
+        # always start at hub
+        start_delivery_point = RoutePoint(0, None)
+        optimized_route = Route()
+        # add start point at hub
+        optimized_route.add_stop(RoutePoint(0, None))
+
+        origin_point = start_delivery_point
+
+        # continue until all vertices have been added to the route
+        while len(optimized_route) <= len(route):
+            best_edge = maxsize
+            best_delivery_point = RoutePoint(0, None)
+
+            # compare against other delivery stops
+            for delivery_point in route:
+                # ignore delivery stops that have already been added to optimized route
+                if delivery_point in optimized_route or delivery_point == start_delivery_point:
+                    continue
+                edge_weight = float(self.distance_table[origin_point.address_id][delivery_point.address_id])
+                # compare distance between this stop and previous best stop distance
+                if edge_weight < best_edge:
+                    best_edge = edge_weight
+                    best_delivery_point = delivery_point
+                    start_delivery_point = delivery_point
+            best_delivery_point.set_distance_to(best_edge)
+            optimized_route.add_stop(best_delivery_point)
+            origin_point = best_delivery_point
+
+        # add a return to hub stop to route
+        final_leg = RoutePoint(0, None)
+        distance = float(self.distance_table[optimized_route[-1].address_id][0])
+        final_leg.set_distance_to(distance)
+        optimized_route.add_stop(final_leg)
+        return optimized_route
+
+
+    ##################
+    # PSUEDOCODE for optimization algo
+    ##################
+
+    # algorithm(route):
+    #     optimized_route <- new Route(obj)
+    #
+    #     ADD hub route stop to optimized_route
+    #     while length of route < length of optmized_route:
+    #         shortest_distance <- very large integer
+    #         for delivery_point in route:
+    #             if distance to delivery_point < shortest_distance:
+    #                 shortest_distance <- distance to delivery_point(float)
+    #         ADD shortest_distance delivery_point to optimized_route
+    #     ADD hub route return to optimized_route
+
+
+    def _run_route(self, truck):
+        # O(n^2)
+        truck.truck_departing_hub()
+        current_time = self.current_time
+        for stop in truck.route:
+            current_time += datetime.timedelta(hours=stop.travel_time)
+            self.total_distance_traveled += stop.distance_to
+            for package in stop.packages:
+                package.delivered = current_time
+                package.status = DELIVERED
+                package.delivered_by_truck = truck
+        truck.truck_returning_hub(current_time)
+
+
+    def _stop_generator(self, packages):
+        for package in packages:
+            stop = RoutePoint(package.address_index, [package])
+            yield stop
+
+    def _consolidate_stops(self, route_stops: Route):
+        """
+        Consolidates any packages going to stops that appear twice in a route.
+        :param route_stops: List of Stops or Route
+        :type route_stops: List or Route
+        :return: Route
+        """
+        # O(n)
+        consolidated = []
+        used = []
+        for stop in route_stops:
+            # if stop has only one package send to consolidated list
+            if stop.address_id not in used:
+                consolidated.append(stop)
+                used.append(stop.address_id)
+            # else look for package with identical address and add package to it
+            else:
+                for consolidated_stop in consolidated:
+                    if consolidated_stop.address_id == stop.address_id:
+                        consolidated_stop.packages.extend(stop.packages)
+        return Route(consolidated)
+
     def _can_fit_in_load(self, load, n_items_to_add=0):
         return len(load) + n_items_to_add <= TRUCK_CAPACITY
 
@@ -78,6 +229,7 @@ class Scheduler:
         :param truck: Truck(obj)
         :return: new_load: Load of Packages
         """
+        # O(n)
         delayed_packages = self.special_packages["delayed"]
         group_packages = self.special_packages["deliver_with"]
         requested_truck_packages = self.special_packages["truck"]
@@ -127,6 +279,7 @@ class Scheduler:
         :param packages:
         :return: Route(obj)
         """
+        # O(n^2)
         route = Route()
         # give id to route
         route.route_id = self._generate_route_id()
@@ -148,6 +301,7 @@ class Scheduler:
         :param truck_id: ID of specific truck
         :return Truck: If truck available
         """
+        # O(n)
         for truck in self.trucks:
             # if provided a specific truck id, check if available at current time
             if truck_id == truck.id and truck.is_truck_available(self.current_time):
@@ -162,127 +316,6 @@ class Scheduler:
         while True:
             count += 1
             yield count
-
-    def simulate_day(self, end_time=END_OF_DAY):
-        """
-        Simulates a day of deliveries.
-
-        Uses optional parameter for end of day to calculate from beginning to
-        day to provided end point or global end of day.  Time advances by a minute per cycle.
-        :param end_time: End of day
-        :return: Void
-        """
-        while self.current_time < end_time:
-
-            truck = self._get_truck()
-
-            # if any regualar loads remain
-            if truck and self.final_loads:
-                load = self.final_loads.pop(0)
-                # check for any special packages that could be added
-                load = self._add_special_packages_to_load(load, truck)
-
-                route = self._build_route(load)
-                truck.set_route(route)
-                self._run_route(truck)
-
-            # check for any last special packages not added to previous routes after day is complete
-            if self.special_packages.values():
-                truck = self._get_truck(2)
-                if truck:
-                    overflow_load = self._add_special_packages_to_load([], truck)
-                    overflow_route = self._build_route(overflow_load)
-                    truck.set_route(overflow_route)
-                    self._run_route(truck)
-
-            # advance time of day by one minute
-            advance_minute = datetime.timedelta(minutes=1)
-            self.current_time += advance_minute
-
-    def _run_route(self, truck):
-        truck.truck_departing_hub()
-        current_time = self.current_time
-        for stop in truck.route:
-            current_time += datetime.timedelta(hours=stop.travel_time)
-            self.total_distance_traveled += stop.distance_to
-            for package in stop.packages:
-                package.delivered = current_time
-                package.status = DELIVERED
-                package.delivered_by_truck = truck
-        truck.truck_returning_hub(current_time)
-
-
-    def _stop_generator(self, packages):
-        for package in packages:
-            stop = RoutePoint(package.address_index, [package])
-            yield stop
-
-    def _consolidate_stops(self, route_stops: Route):
-        """
-        Consolidates any packages going to stops that appear twice in a route.
-        :param route_stops: List of Stops or Route
-        :type route_stops: List or Route
-        :return: Route
-        """
-        consolidated = []
-        used = []
-        for stop in route_stops:
-            # if stop has only one package send to consolidated list
-            if stop.address_id not in used:
-                consolidated.append(stop)
-                used.append(stop.address_id)
-            # else look for package with identical address and add package to it
-            else:
-                for consolidated_stop in consolidated:
-                    if consolidated_stop.address_id == stop.address_id:
-                        consolidated_stop.packages.extend(stop.packages)
-        return Route(consolidated)
-
-    def _optimize_route(self, route_stops: Route) -> Route:
-        """
-        Optimizes route based on distance between stops.
-
-        :param route_stops:
-        :return Route:
-        """
-
-        # clear duplicates
-        route = self._consolidate_stops(route_stops)
-
-        # always start at hub
-        start_delivery_point = RoutePoint(0, None)
-        optimized_route = Route()
-        # add start point at hub
-        optimized_route.add_stop(RoutePoint(0, None))
-
-        origin_point = start_delivery_point
-
-        # continue until all vertices have been added to the route
-        while len(optimized_route) <= len(route):
-            best_edge = maxsize
-            best_delivery_point = RoutePoint(0, None)
-
-            # compare against other delivery stops
-            for delivery_point in route:
-                # ignore delivery stops that have already been added to optimized route
-                if delivery_point in optimized_route or delivery_point == start_delivery_point:
-                    continue
-                edge_weight = float(self.distance_table[origin_point.address_id][delivery_point.address_id])
-                # compare distance between this stop and previous best stop distance
-                if edge_weight < best_edge:
-                    best_edge = edge_weight
-                    best_delivery_point = delivery_point
-                    start_delivery_point = delivery_point
-            best_delivery_point.set_distance_to(best_edge)
-            optimized_route.add_stop(best_delivery_point)
-            origin_point = best_delivery_point
-
-        # add a return to hub stop to route
-        final_leg = RoutePoint(0, None)
-        distance = float(self.distance_table[optimized_route[-1].address_id][0])
-        final_leg.set_distance_to(distance)
-        optimized_route.add_stop(final_leg)
-        return optimized_route
 
     def _translate_address(self, target_address):
         for index, address in enumerate(self.address_table[1]):

@@ -19,12 +19,13 @@ class TruckLoad:
         }
 
         # package sorting
-        self.packages.sort(key=lambda x: (x.deadline, x.address))
+        self.packages.sort(key=lambda x: (x.deadline, x.address))  # O(n log n)
         self._sort_packages()
 
         # package consolidation
 
     def _sort_packages(self):
+        # O(n)
         address_clusters = {}
 
         # sort priority, special, and regular packages
@@ -45,6 +46,7 @@ class TruckLoad:
         self.truck_loads = self._load_split(package_clusters)
 
     def _load_split(self, package_clusters):
+        # O(n)
         result = []
         load = []
         for cluster in package_clusters:
